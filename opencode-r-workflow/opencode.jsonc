@@ -1,0 +1,28 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // Orchestration is the default agent. Its Phase 0 startup check
+  // redirects you to the interviewer when there are no active objectives.
+  "default_agent": "project-manager",
+
+  // Prompt caching. Cache reads on opencode-go are far cheaper than
+  // full-price input tokens and cache writes are free on most Go models,
+  // so this stretches how much work fits inside the Go usage limits.
+  //
+  // setCacheKey        - forces a stable cache key on every request.
+  // promptCacheRetention - "in_memory" or "24h". 24h is the documented max
+  //                        and is what makes the human approval gates cheap;
+  //                        the gateway default is roughly 5 minutes, which a
+  //                        coffee break is enough to blow past.
+  //
+  // If your installed schema rejects promptCacheRetention here, drop it and
+  // keep setCacheKey - that one is the load-bearing option.
+  "provider": {
+    "opencode-go": {
+      "options": {
+        "setCacheKey": true,
+        "promptCacheRetention": "24h"
+      }
+    }
+  }
+}
