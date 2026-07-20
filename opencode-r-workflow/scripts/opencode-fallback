@@ -1,0 +1,44 @@
+#!/usr/bin/env sh
+# opencode-fallback — launch opencode with the fallback overlay active.
+# When opencode-go quota is exhausted, run this instead of `opencode`;
+# run `opencode` again once quota resets.
+#
+# The overlay routes each agent to the cheapest path off opencode-go:
+#   DeepSeek-family models  -> deepseek/  (direct DeepSeek API)
+#   Everything else (GLM)   -> openrouter/
+#
+# Mechanism: reads .opencode/profiles/fallback-overlay.json into the
+# OPENCODE_CONFIG_CONTENT env var, which sits at the top of opencode's
+# config precedence chain and cleanly overrides the per-agent `model:`
+# frontmatter for this invocation only. Uses only first-party opencode
+# config — no plugins.
+#
+# Requires: $DEEPSEEK_API_KEY and $OPENROUTER_API_KEY in the environment.
+
+set -eu
+
+# Resolve the repo root so this works from any subdirectory.
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+repo_root="$(cd "$script_dir/.." && pwd)"
+overlay="$repo_root/.opencode/profiles/fallback-overlay.json"
+
+if [ ! -f "$overlay" ]; then
+  echo "opencode-fallback: overlay not found at $overlay" >&2
+  exit 1
+fi
+
+missing=""
+if [ -z "${DEEPSEEK_API_KEY:-}" ];  then missing="$missing DEEPSEEK_API_KEY"; fi
+if [ -z "${OPENROUTER_API_KEY:-}" ]; then missing="$missing OPENROUTER_API_KEY"; fi
+if [ -n "$missing" ]; then
+  echo "opencode-fallback: missing env var(s):$missing" >&2
+  echo "  export them in your shellrc or a project .env, e.g.:" >&2
+  echo "    export DEEPSEEK_API_KEY=sk-..." >&2
+  echo "    export OPENROUTER_API_KEY=sk-or-..." >&2
+  exit 1
+fi
+
+OPENCODE_CONFIG_CONTENT="$(cat "$overlay")"
+export OPENCODE_CONFIG_CONTENT
+
+exec opencode "$@"
