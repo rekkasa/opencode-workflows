@@ -1,7 +1,7 @@
 ---
 description: "Interviewer: relentless scope definer. Produces OBJECTIVES.md, then ends the session."
 mode: primary
-model: opencode-go/deepseek-v4-pro
+model: deepseek/deepseek-v4-pro
 tools:
   task: false
 ---

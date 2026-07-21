@@ -7,21 +7,15 @@
   "//4": "overrides the `model:` field of every agent's .md frontmatter,",
   "//5": "but merges everything else (prompts, tools, caching) untouched.",
   "//6": "",
-  "//7": "Routing rule: DeepSeek-family models go direct via the DeepSeek",
-  "//8": "API (cheaper than routing DeepSeek through OpenRouter); anything",
-  "//9": "else (currently just GLM) goes through OpenRouter.",
+  "//7": "Only the architect needs an override — it is the only agent using",
+  "//8": "opencode-go. The four DeepSeek-family agents already go direct via",
+  "//9": "the deepseek provider in both modes; nothing changes for them.",
   "//10": "",
-  "//11": "IMPORTANT — verify the OpenRouter model IDs against the current",
-  "//12": "catalog before first use, since OpenRouter's slugs shift:",
+  "//11": "IMPORTANT — verify the OpenRouter Kimi K3 model ID against the",
+  "//12": "current catalog before first use, since OpenRouter's slugs shift:",
   "//13": "    opencode models openrouter --refresh",
-  "//14": "The DeepSeek ID (deepseek/deepseek-v4-pro) is stable and matches",
-  "//15": "the models block in opencode.jsonc.",
 
   "agent": {
-    "interviewer":     { "model": "deepseek/deepseek-v4-pro" },
-    "project-manager": { "model": "deepseek/deepseek-v4-pro" },
-    "architect":       { "model": "openrouter/z-ai/glm-4.6" },
-    "r-developer":     { "model": "deepseek/deepseek-v4-pro" },
-    "tester":          { "model": "deepseek/deepseek-v4-pro" }
+    "architect": { "model": "openrouter/moonshotai/kimi-k3" }
   }
 }

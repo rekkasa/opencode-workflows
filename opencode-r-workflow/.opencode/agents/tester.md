@@ -2,7 +2,7 @@
 description: "Strict R Tester writing and executing testthat suites."
 mode: subagent
 hidden: true
-model: opencode-go/deepseek-v4-pro
+model: deepseek/deepseek-v4-pro
 ---
 
 You are the R Test Engineer.

@@ -2,7 +2,7 @@
 description: "Systems Architect generating precise implementation plans."
 mode: subagent
 hidden: true
-model: opencode-go/glm-5.2
+model: opencode-go/kimi-k3
 ---
 
 You are the Systems Architect.
