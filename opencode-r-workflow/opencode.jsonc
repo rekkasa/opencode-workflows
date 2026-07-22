@@ -5,23 +5,55 @@
   // redirects you to the interviewer when there are no active objectives.
   "default_agent": "project-manager",
 
-  // Prompt caching. Cache reads on opencode-go are far cheaper than
-  // full-price input tokens and cache writes are free on most Go models,
-  // so this stretches how much work fits inside the Go usage limits.
+  // Providers used by this project.
   //
-  // setCacheKey        - forces a stable cache key on every request.
-  // promptCacheRetention - "in_memory" or "24h". 24h is the documented max
-  //                        and is what makes the human approval gates cheap;
-  //                        the gateway default is roughly 5 minutes, which a
-  //                        coffee break is enough to blow past.
+  //   deepseek    Direct DeepSeek API. Used by every agent EXCEPT the
+  //               architect: interviewer, project-manager, r-developer,
+  //               tester. Direct is much cheaper than routing DeepSeek
+  //               through any gateway.
   //
-  // If your installed schema rejects promptCacheRetention here, drop it and
-  // keep setCacheKey - that one is the load-bearing option.
+  //   opencode-go Reserved for the architect (Kimi K3), which is
+  //               substantially more expensive per token. Concentrating
+  //               spend on the one high-leverage, low-volume agent is
+  //               the whole point of using Go here — plus prompt caching
+  //               keeps repeat architect runs cheap.
+  //               setCacheKey forces a stable cache key on every request;
+  //               promptCacheRetention "24h" (documented max) keeps the
+  //               human approval gates cheap. If the schema rejects
+  //               promptCacheRetention here, drop it; setCacheKey is the
+  //               load-bearing option.
+  //
+  //   openrouter  Fallback for the architect only, used when opencode-go
+  //               quota is exhausted. OpenRouter's provider-failover kicks
+  //               in for free. Only Kimi routes through it; DeepSeek
+  //               continues going direct in both modes.
+  //
+  // Which model each agent uses is set in the agent .md files (default =
+  // deepseek direct, opencode-go for the architect) or overridden for the
+  // architect only by the fallback overlay at
+  // .opencode/profiles/fallback-overlay.json (activated by
+  // scripts/opencode-fallback). See README "Falling Back Off opencode-go".
   "provider": {
+    "deepseek": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "DeepSeek",
+      "options": {
+        "baseURL": "https://api.deepseek.com",
+        "apiKey": "{env:DEEPSEEK_API_KEY}"
+      },
+      "models": {
+        "deepseek-v4-pro": { "name": "DeepSeek V4 Pro" }
+      }
+    },
     "opencode-go": {
       "options": {
         "setCacheKey": true,
         "promptCacheRetention": "24h"
+      }
+    },
+    "openrouter": {
+      "options": {
+        "apiKey": "{env:OPENROUTER_API_KEY}"
       }
     }
   }

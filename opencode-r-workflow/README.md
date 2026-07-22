@@ -271,6 +271,93 @@ structural changes are introduced, keeping it under ~100 lines —
 it is read on every planning run, so it is not allowed to grow
 without bound.
 
+## Falling Back Off opencode-go
+
+Only the architect uses opencode-go — everything else already runs
+on your direct DeepSeek API key. When opencode-go quota is
+exhausted, only the architect is affected, and only the architect
+needs to reroute. That's what this fallback does.
+
+The routing:
+
+- **Normal mode (`opencode`)** — architect on `opencode-go/kimi-k3`,
+  the other four agents on `deepseek/deepseek-v4-pro` direct.
+- **Fallback mode (`opencode-fallback`)** — architect on
+  `openrouter/moonshotai/kimi-k3`, the other four unchanged.
+- **Both modes** — DeepSeek goes direct via `api.deepseek.com` for
+  interviewer, project-manager, r-developer, and tester. Only Kimi
+  reroutes when quota runs out.
+
+This concentrates opencode-go spend on the one high-leverage,
+low-turn-count agent, and gets prompt caching where it matters most
+(repeat architect runs within a feature).
+
+### One-time setup
+
+1. Set both API keys in your shell (both are used in normal mode
+   too — DeepSeek by four agents on every session, OpenRouter only
+   when you fall back):
+   ```sh
+   export DEEPSEEK_API_KEY=sk-...
+   export OPENROUTER_API_KEY=sk-or-...
+   ```
+   Put these in `~/.zshrc` / `~/.bashrc` so they persist.
+
+2. Verify today's Kimi K3 model IDs against the live catalogs and
+   correct the placeholders if needed:
+   ```sh
+   opencode models opencode-go --refresh    # for the architect .md
+   opencode models openrouter --refresh     # for the overlay
+   ```
+   The `deepseek/deepseek-v4-pro` ID is stable and matches the
+   `models` block registered in `opencode.jsonc`, so nothing to
+   verify there.
+
+3. Optionally alias the wrapper globally so you can call it from
+   anywhere:
+   ```sh
+   alias opencode-fallback='/path/to/opencode-r-project/scripts/opencode-fallback'
+   ```
+
+### Using it
+
+- **Normal mode:** `opencode` — nothing changes.
+- **Fallback mode:** `./scripts/opencode-fallback` (or the alias).
+  Only the architect uses a different backend for that session.
+
+The switch happens per invocation. Close the session, run `opencode`
+again, and you're back on Go — no cleanup, no file edits.
+
+### Mid-session fallback
+
+If you hit the Go limit *during* a running session, you don't have
+to restart:
+
+- Press `Tab` (or use `/agent`) to switch to the architect in the
+  TUI.
+- Use `/models` to pick the OpenRouter Kimi K3 model for the rest
+  of this session.
+
+That's a single manual switch (only the architect matters). For the
+next session, use the wrapper.
+
+### How it works
+
+The wrapper reads `.opencode/profiles/fallback-overlay.json` and
+passes it through the `OPENCODE_CONFIG_CONTENT` environment
+variable, which sits at the highest user-controllable tier of
+opencode's config precedence — above the project `opencode.jsonc`
+and above the `.opencode` directory that holds the agent files.
+Because opencode *merges* configs rather than replacing them, only
+the architect's `model:` field gets overridden; every prompt, tool
+permission, cache setting, and skill still comes from the usual
+files. No third-party plugins, no filesystem swaps.
+
+The `deepseek`, `opencode-go`, and `openrouter` provider blocks all
+live in `opencode.jsonc` and are registered whenever opencode
+starts. Which of the three actually gets called depends on which
+provider prefix each agent's active model ID resolves to.
+
 ## Modifying This Setup
 
 ### Adding a Skill
