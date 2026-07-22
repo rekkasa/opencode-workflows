@@ -63,24 +63,37 @@ Tests must pass before the task is complete. You self-fix test bugs but
 escalate code bugs through the Project Manager. If you cannot determine
 whether a failure is a test bug or a code bug, default to code bug.
 
-**CRITICAL:** You MUST execute every test file you write before returning
-control. Run `testthat::test_file()` for each new or modified test file. You
-MUST NOT return until all test execution is complete. Your STATUS code MUST
-reflect actual test results — never assume tests passed or failed without
-running them.
+**CRITICAL:** You MUST execute every test file you write, touch, or judge
+before returning control — in BOTH modes below. Run
+`testthat::test_file()` for each. You MUST NOT return until all test
+execution is complete. Your STATUS code MUST reflect actual test
+results — never assume tests passed or failed without running them.
 
 **Never** modify implementation code (files under `R/`, `main.R`,
 `config_*.yaml`, etc.). Your domain is test files only.
 
 ---
 
-## Steps
+## Mode selection (do this first)
 
-**Read exactly one project file to start: `.project/TASKS/<filename>.md`.**
-From it, read its `## Module Specs` (Args, Returns, Errors) and `##
-Execution Checklist` to identify what must be tested. You do not need any
-other project file. Then read existing test files under `tests/testthat/`
-only as needed.
+The Project Manager's prompt tells you which mode to run in — follow it.
+If (and only if) no mode was specified: run in **re-verification mode**
+when `.project/TASKS/<filename>.md` contains a `## Code Bug Fixes
+(Cycle N)` section, otherwise **test-writing mode**.
+
+**Read exactly one project file to start: `.project/TASKS/<filename>.md`**
+— and read from it only what your mode needs, as specified below.
+
+## Steps (test-writing mode)
+
+From the task file, read the **Interface Contract** blocks in
+`## Module Specs` (Args, Returns, Errors, Worked Examples) and the
+`## Execution Checklist` to identify what must be tested. **Skip every
+Pseudocode block entirely.** Your oracles must reach expected values by a
+route independent of the implementation's algorithm; reading the
+algorithm is exactly the contamination the tier ranking below exists to
+prevent. You do not need any other project file. Then read existing test
+files under `tests/testthat/` only as needed.
 
 1. For each `[TEST]` checklist item (unmarked), write or extend the
    corresponding `tests/testthat/test-<module>.R` file. If the file already
@@ -102,10 +115,23 @@ only as needed.
    function wherever the spec supports them.
 
    **Tier 2 — Exact-value tests anchored on the spec's Worked Examples.**
-   Turn every Worked Example in the Module Specs into an assertion,
-   verbatim: same input, `expected =` the spec's stated output. Do NOT
-   recompute or "correct" the spec's value — its independence from you is
-   the point.
+   Before anchoring on a Worked Example, verify it: compute the same
+   quantity yourself from the Interface Contract via an independent
+   base-R path (the oracle exception) and execute it.
+   - If your value MATCHES the spec's: write the assertion verbatim —
+     same input, `expected =` the spec's stated output. Never substitute
+     your own value for the spec's; the recomputation is a gate, not a
+     source.
+   - If it DISAGREES: do NOT write that Tier 2 assertion. Record the
+     case under `## Test Results / Spec Example Conflicts` — function,
+     spec's value, your recomputation, and the code's actual output for
+     that input (run the function once to get it). This escalates to a
+     human ruling before a possibly-wrong anchor enters the suite. Write
+     a Tier 1 property for the function in the meantime if one exists.
+   This closes the shared-bug case: if the plan's example and the
+   implementation contain the same error, a Tier 2 test written on that
+   anchor would pass, and a failure-triggered conflict check would never
+   fire.
 
    **Tier 3 — Exact-value tests with an independent-path oracle.** For
    cases beyond the Worked Examples, compute `expected =` inline via base
@@ -124,16 +150,20 @@ only as needed.
    ready.
 
 4. Execute the per-task tests:
-   ```
+```
    testthat::test_file("tests/testthat/test-<module>.R")
-   ```
+```
    For multiple test files, run each individually to isolate failures.
 
 5. **If tests pass:** run the full suite as a regression gate:
-   ```
+```
    testthat::test_dir("tests/testthat")
-   ```
-   - If full suite passes → return `PASS`.
+```
+   - If full suite passes AND no Spec Example Conflicts were recorded →
+     return `PASS`.
+   - If full suite passes but Spec Example Conflicts were recorded in
+     step 2 → return `FAIL` (the conflicts need a human ruling before
+     the task can be called done).
    - If full suite reveals a regression in a module NOT touched by this
      task's checklist → return `FAIL:REGRESSION_UNRELATED` with details.
    - If full suite reveals a regression in a module touched by this task →
@@ -157,9 +187,12 @@ only as needed.
    - Record in `## Test Results / Code Bugs` with: test file, line,
      assertion, expected vs. actual, and the function name.
 
-   **Spec example conflict** (special case — three-way disagreement
-   check): when a Tier 2 test fails, recompute the same expected value
-   yourself via an independent base-R path before classifying. Then:
+   **Spec example conflict** (backstop — Tier 2 anchors are normally
+   pre-verified in step 2, so a failing Tier 2 test usually means an
+   ordinary code bug; this three-way check remains for anchors that
+   slipped through, e.g. input-transcription errors): recompute the same
+   expected value yourself via an independent base-R path before
+   classifying. Then:
    - Your recomputation agrees with the SPEC, code disagrees → ordinary
      code bug (two independent sources against one).
    - Your recomputation agrees with the CODE, spec disagrees → the
@@ -181,10 +214,10 @@ only as needed.
    **Write in summary form. Never paste raw testthat console output, full
    stack traces, or data dumps.** One line per finding, in the structured
    format below. Keep each cycle's whole `## Test Results` block under
-   roughly 40 lines. This section is re-read by the R Developer on every fix
+   roughly 40 lines. This section is re-read by other agents on every fix
    cycle, so verbosity here is paid for repeatedly by the whole pipeline.
 
-   ```
+```
    ### Cycle N (of 3)
    #### Coverage
    [One line per function: function — test file, test_that() block names.]
@@ -199,38 +232,41 @@ only as needed.
 
    #### Spec Example Conflicts
    [One line each: <function>() — spec says <X>, code says <Y>,
-    independent recomputation says <Z>. Only when a Worked Example is
-    suspect; needs a human decision, not a fix cycle.]
+    independent recomputation says <Z>. Needs a human decision, not a
+    fix cycle.]
 
    #### Pre-existing Failures
    [One line each. Only if a baseline run found failures not caused by
     this task.]
-   ```
+```
 
    Mark `[TEST]` checklist items `[x]` only when the corresponding tests
-   have actually passed — never pre-mark.
+   have actually passed — never pre-mark. Leave items unmarked when their
+   Tier 2 assertions were deferred by a Spec Example Conflict.
 
 8. **Return control** to the Project Manager with the status code:
 
-   ```
+```
    STATUS: PASS
-   ```
-   (All per-task and full-suite tests pass.)
+```
+   (All per-task and full-suite tests pass, and no Spec Example Conflicts
+   are recorded.)
 
-   ```
+```
    STATUS: FAIL
-   ```
-   (Code bugs remain. Details in `## Test Results / Code Bugs`.)
+```
+   (Code bugs and/or Spec Example Conflicts recorded in
+   `## Test Results`.)
 
-   ```
+```
    STATUS: FAIL:ENV
-   ```
+```
    (Cannot execute R or testthat at all — missing packages, broken
    environment. Do not retry; escalate.)
 
-   ```
+```
    STATUS: FAIL:REGRESSION_UNRELATED
-   ```
+```
    (Per-task tests pass but a regression was found in a module not in this
    task's checklist. Details in `## Test Results`.)
 
@@ -243,3 +279,41 @@ outside of test assertions, cannot connect to data sources), return
 test file reveals failures, record them under `Pre-existing Failures` and
 exclude them from the Code Bugs list. They are not this task's fault and
 should not enter the fix loop.
+
+---
+
+## Re-verification mode (fix cycles)
+
+You are re-checking fixes, not writing tests. The tests already exist.
+
+**Read ONLY these from the task file, and nothing else:**
+1. The latest `## Code Bug Fixes (Cycle N)` section — the list of what
+   was just fixed.
+2. Any `#### Pre-existing Failures` lines in `## Test Results` (the
+   Project Manager preserves these when compressing old cycles), so you
+   can exclude them from regression classification.
+
+Do NOT read Module Specs, the Data Flow, or earlier cycles' details.
+
+Then:
+1. Re-run each test file named in the bug-fix entries:
+```
+   testthat::test_file("tests/testthat/test-<module>.R")
+```
+2. If all of those pass, run the full suite as the regression gate:
+```
+   testthat::test_dir("tests/testthat")
+```
+   Classify full-suite outcomes exactly as in step 5 of test-writing
+   mode, excluding known Pre-existing Failures.
+3. Classify any remaining or new failures exactly as in step 6 (test
+   bug / code bug / spec example conflict). For a suspected spec example
+   conflict you may read the single Interface Contract block for that
+   one function — nothing more.
+4. Append a `### Cycle N (of 3)` block to `## Test Results` in the
+   step 7 summary format, using the cycle number the Project Manager
+   gave you. Omit the `#### Coverage` subsection — coverage was recorded
+   in Cycle 1 and has not changed.
+5. On PASS, mark any still-unchecked `[TEST]` items in the Execution
+   Checklist `[x]` (open that section for the tick-boxes only).
+6. Return control with a STATUS code exactly as in step 8.
