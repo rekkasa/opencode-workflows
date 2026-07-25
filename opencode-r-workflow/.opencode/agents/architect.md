@@ -49,17 +49,17 @@ Check whether `.project/TASKS/<filename>.md` already exists and contains any
 checked-off ([x]) items in its Execution Checklist.
 
 If it does, do NOT overwrite it. Stop immediately and return control with:
-````
+```
 STATUS: conflict
 REASON: <filename> already has in-progress or completed checklist items
          (N of M steps marked done)
-````
+```
 
 ## Write the plan
 
 Otherwise, overwrite the assigned `.project/TASKS/<filename>.md` with
 EXACTLY this structure:
-````
+```
 # Code Implementation Plan
 ## Overview
 ## Language and Stack
@@ -67,10 +67,11 @@ EXACTLY this structure:
 ## Module Specs
 [Spec every exported function as TWO clearly separated blocks:
 
- Interface Contract — function name, Args (with types), Returns, Errors,
-   and Worked Examples. This block must stand alone as a complete,
-   testable spec: the Tester and the Documenter read ONLY the Interface
-   Contract blocks and never the Pseudocode.
+ Interface Contract — function name, Args (with types and one-line
+   meanings), Returns, Errors, and Worked Examples. This block must
+   stand alone as a complete, testable spec: the Tester and the
+   Documenter read ONLY the Interface Contract blocks and never the
+   Pseudocode.
 
  Pseudocode — Internal helpers and step-by-step pseudocode. Read by the
    R Developer only.]
@@ -94,22 +95,22 @@ EXACTLY this structure:
 
  Format each documentation item as:
    N. [ ] [DOCS] README.md: <section>: <required change>
-   N. [ ] [DOCS] vignettes/<name>.Rmd: <section>: <required change>
-   N. [ ] [DOCS] knit all touched vignettes and verify they build cleanly
+   N. [ ] [DOCS] vignettes/<name>.qmd: <section>: <required change>
+   N. [ ] [DOCS] render all touched vignettes and verify they build cleanly
  If the task changes nothing user-facing, Phase 4 is exactly one item:
    N. [ ] [DOCS] no user-facing change — verify README.md and vignettes
       remain accurate, tick to confirm]
-````
+```
 
 **Worked Examples (MANDATORY for every exported function).** Under each
 exported function's Interface Contract, include 1–2 concrete
 input → output examples:
 
-````
+```
 Worked Examples:
   1. f(x = c(2, 4, 6), na_rm = TRUE)  ->  2
   2. f(x = c(5, NA), na_rm = FALSE)   ->  NA
-````
+```
 
 Rules for these examples:
 - Inputs must be TINY (3–6 values) so the one-off check below stays a
@@ -121,20 +122,20 @@ Rules for these examples:
   condition for an Errors example.
 - These examples are the independent anchor the Tester's exact-value
   assertions are built on, and the worked material the Documenter later
-  knits into vignette chunks. They are the single most leveraged lines in
-  the plan — a wrong example sends the whole fix loop chasing a phantom
-  bug. The Tester independently recomputes each one before anchoring on
-  it, so an example that does not follow from the contract will be
-  escalated to the user, not silently used.
+  renders into vignette chunks. They are the single most leveraged lines
+  in the plan — a wrong example sends the whole fix loop chasing a
+  phantom bug. The Tester independently recomputes each one before
+  anchoring on it, so an example that does not follow from the contract
+  will be escalated to the user, not silently used.
 
 **Machine-generate every example's expected value.** Do not derive
 expected outputs by hand. For each example input, write a one-off
 computation expressing the function's CONTRACT — plain base R and
 explicit formulas — and execute it, e.g.:
 
-````
+```
 Rscript -e 'mean(c(2, 4, 6))'
-````
+```
 
 Transcribe the printed value exactly as the example's output.
 
@@ -160,6 +161,16 @@ Rules:
   hand derivation and add one line under Overview: "Worked Examples
   derived by hand, not machine-verified."
 
+**Args carry meaning, not just type.** Every Args entry in an
+Interface Contract states in one line what the argument controls, not
+merely its type. This matters doubly for any argument whose value
+arrives from configuration: the validator's contract only knows a
+key's shape, so the consumer's Args line is the ONLY place in the plan
+where that key's meaning can live, and the Documenter joins these
+lines into the configuration vignette and the README's Configuration
+table. `max_retries (integer): times a failed fetch is retried before
+erroring` documents a key; `max_retries (integer)` documents nothing.
+
 **Documentation items (Phase 4 — MANDATORY in every plan).** Derive them
 from the Interface Contracts and Data Flow you just wrote — never from
 Pseudocode; the Documenter is forbidden from reading Pseudocode for the
@@ -167,10 +178,14 @@ same contamination reason the Tester is. For each task ask:
 - Which README sections does this change touch? New exported function →
   Usage. New or changed config key → Configuration. New module →
   Project Structure. New setup requirement → Setup.
-- Does the Data Flow belong in an existing vignette or a new one? A
-  function whose Interface Contract reads a config file defines, key by
-  key, what the configuration vignette must document — point the `[DOCS]`
-  item at that contract rather than restating it.
+- Does the Data Flow belong in an existing vignette or a new one?
+- Does the task touch configuration? The configuration vignette is a
+  JOIN, not a transcription: the validator's contract gives each key's
+  shape, the consumers' Args lines give its meaning, and recorded
+  intent (ARCHITECTURE's Key Decisions) gives the why where it exists.
+  Point the `[DOCS]` item at the validator AND the consumer functions
+  by name — never at the validator alone; that yields a bare key
+  inventory.
 Name the exact file and section in every item so the Documenter can act
 without guessing. Do not restate Worked Example values inside `[DOCS]`
 items; the Documenter reads the Interface Contracts directly. Every plan
@@ -186,6 +201,6 @@ more than about 3 modules, write the plan for the first coherent 2–3 and
 note under Overview which modules are deferred to a follow-up task file.
 
 When saved, return control with:
-````
+```
 STATUS: complete
-````
+```

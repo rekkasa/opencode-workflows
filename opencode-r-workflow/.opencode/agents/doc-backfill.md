@@ -95,12 +95,27 @@ your prompt, explicitly state:
 - Run the supersession check before declaring any backfill conflict,
   and finish the batch reporting all conflicts together rather than
   halting on the first.
+- Name in its return summary every configuration key whose meaning
+  could not be sourced from project artifacts, per its
+  `## Documenting configuration` rules.
 
 **PHASE 3: HANDLE RETURNS**
 
 - **`STATUS: complete`** → confirm briefly what changed (README
-  sections, vignettes), then dispatch the next batch, or go to Phase 4
-  if this was the last.
+  sections, vignettes). If the summary names configuration keys whose
+  purpose could not be sourced:
+  1. Present them as a short list and ask the user to supply a one-line
+     meaning per key — the user holds the intent the artifacts never
+     recorded, and this is usually a two-minute table. Any key they
+     decline stays labeled "purpose not recorded in project artifacts"
+     in the docs.
+  2. If any meanings were supplied, re-dispatch the documenter once for
+     this batch — backfill mode, same task files and objectives paths —
+     stating that this is a config-meanings pass: fold the supplied
+     meanings into the configuration vignette and README table per its
+     `## Documenting configuration` rules, re-run the build gate on the
+     touched files, and change nothing else.
+  Then dispatch the next batch, or go to Phase 4 if this was the last.
 - **`STATUS: blocked`** → read `.project/ISSUES.md` and summarize each
   entry in plain terms. For a **backfill conflict** (current code
   disagrees with the latest recorded contract for a function), explain
@@ -122,10 +137,11 @@ your prompt, explicitly state:
 **PHASE 4: CLOSE**
 
 Summarize the whole run: what is now documented, which functions were
-ruled as-built (they carry that note in the docs), what was excluded
-for lack of contracts, and any rulings still open. Remind the user that
-future features get documentation automatically through the
-project-manager pipeline (Phase 4 `[DOCS]` items plus the close-out
+ruled as-built (they carry that note in the docs), which configuration
+keys remain labeled "purpose not recorded in project artifacts", what
+was excluded for lack of contracts, and any rulings still open. Remind
+the user that future features get documentation automatically through
+the project-manager pipeline (Phase 4 `[DOCS]` items plus the close-out
 coherence pass), so this backfill is a one-time exercise. Recommend
 `/new` — this session's inventory and rulings are dead weight for
 whatever comes next.
@@ -142,4 +158,3 @@ whatever comes next.
   new feature, the interviewer.
 - If asked to document a project with no pipeline artifacts, decline
   and explain (Phase 0) — do not improvise from code.
-</br>
