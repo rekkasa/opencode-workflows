@@ -105,7 +105,7 @@ Upon user approval, use the task tool to invoke the 'r-developer' subagent,
 passing the same filename. In your prompt to the r-developer, explicitly
 instruct it to execute ONLY checklist items marked `[IMPL]` and to never
 create, modify, or delete files under `tests/testthat/` or `vignettes/`,
-or `README.md`.
+or `README.md`, `_quarto.yml`, or `index.qmd`.
 
 **PHASE 5: HANDLE RETURN FROM R DEVELOPER**
 Check the STATUS the R Developer returned with.
@@ -230,10 +230,10 @@ Upon approval, for each cycle:
    have served their purpose, and the file is re-read on every remaining
    cycle. Then append a `## Code Bug Fixes (Cycle N)` section to the task
    file with a numbered list mirroring the Code Bugs entries. Format:
-````
+```
    1. [ ] Fix: <function>() returns <actual> instead of <expected>
       for <input> (test-<module>.R:<line>)
-````
+```
    Keep entries to one or two lines each — the R Bugfixer reads this
    section on every fix invocation.
 2. Invoke the 'r-bugfixer' subagent, passing the task filename and
@@ -287,15 +287,29 @@ a Tester `PASS` (5B.3) or from a task with no `[TEST]` items (5B.1).
 2. Step-by-step mode: ask 'Shall I invoke the Documenter to execute the
    `[DOCS]` items for this task?' and wait. In autopilot, proceed.
 3. Invoke the 'documenter' subagent, passing the task filename. In your
-   prompt, explicitly instruct it to execute ONLY checklist items marked
-   `[DOCS]`, to modify only `README.md` and files under `vignettes/`
-   (plus the DESCRIPTION vignette-build fields in a package project), to
-   never touch `R/`, `tests/testthat/`, `main.R`, or config files, and to
-   run its build gate before returning.
+   prompt, explicitly instruct it: execute ONLY checklist items marked
+   `[DOCS]`; vignettes are Quarto (`.qmd`) ONLY — never create or extend
+   `.Rmd`, and migrate any `.Rmd` found under `vignettes/` per its rules
+   (deleting a `.Rmd` only after its `.qmd` replacement renders
+   cleanly); keep the documentation site SOURCES (`_quarto.yml`,
+   `index.qmd`) present whenever vignettes exist; run its build gate
+   (`quarto render`) before returning AND delete all generated render
+   output afterward (`_site/`, stray `.html`/`_files` beside sources) —
+   the repository ships documentation sources only; the user serves the
+   site themselves with `quarto preview`; modify only `README.md`,
+   files under `vignettes/`, and the two site files (plus the
+   DESCRIPTION vignette-build fields and site `.Rbuildignore` lines in
+   a package project); never touch `R/`, `tests/testthat/`, `main.R`,
+   or config files.
 4. Handle the return:
    - If `STATUS: complete`: confirm the `[DOCS]` items are marked `[x]`,
      summarize what documentation changed (which README sections, which
-     vignettes), announce the task is complete, and go to Phase 6.
+     vignettes, any `.Rmd` files migrated, whether the site sources were
+     created or updated), relay any configuration keys the Documenter
+     named as unsourced — offering to re-invoke it with one-line
+     meanings the user supplies — and note that `quarto preview` from
+     the project root serves the updated docs locally. Then announce the
+     task is complete and go to Phase 6.
    - If `STATUS: blocked`: read `.project/ISSUES.md`, summarize the
      blocker, and ask how to proceed. Stop in both modes. If the ISSUE is
      a doc–example conflict (a vignette chunk faithful to a Worked
@@ -329,10 +343,11 @@ under these objectives?'
      accepted, invoke the 'documenter' subagent in coherence mode — no
      `[DOCS]` checklist; pass the feature name and the list of this
      feature's task filenames (ask the user to confirm the list if you
-     are not certain which task files belong to this feature). Handle
-     `complete`/`blocked` exactly as in Phase 5C step 4. This step must
-     run BEFORE step 2: the Documenter reads `OBJECTIVES.md`, which is
-     about to be archived.
+     are not certain which task files belong to this feature), and
+     repeat the same format, site, cleanup, and boundary instructions
+     as in Phase 5C step 3. Handle `complete`/`blocked` exactly as in
+     Phase 5C step 4. This step must run BEFORE step 2: the Documenter
+     reads `OBJECTIVES.md`, which is about to be archived.
   2. Edit `.project/OBJECTIVES.md`: change `Status: active` to
      `Status: completed`.
   3. Create `.project/ARCHIVE/` if needed and move the file there as
