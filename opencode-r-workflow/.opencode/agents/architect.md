@@ -49,17 +49,17 @@ Check whether `.project/TASKS/<filename>.md` already exists and contains any
 checked-off ([x]) items in its Execution Checklist.
 
 If it does, do NOT overwrite it. Stop immediately and return control with:
-```
+````
 STATUS: conflict
 REASON: <filename> already has in-progress or completed checklist items
          (N of M steps marked done)
-```
+````
 
 ## Write the plan
 
 Otherwise, overwrite the assigned `.project/TASKS/<filename>.md` with
 EXACTLY this structure:
-```
+````
 # Code Implementation Plan
 ## Overview
 ## Language and Stack
@@ -69,14 +69,14 @@ EXACTLY this structure:
 
  Interface Contract — function name, Args (with types), Returns, Errors,
    and Worked Examples. This block must stand alone as a complete,
-   testable spec: the Tester reads ONLY the Interface Contract blocks
-   and never the Pseudocode.
+   testable spec: the Tester and the Documenter read ONLY the Interface
+   Contract blocks and never the Pseudocode.
 
  Pseudocode — Internal helpers and step-by-step pseudocode. Read by the
    R Developer only.]
 ## Data Flow
 ## Execution Checklist
-[A numbered checklist divided into three phases:
+[A numbered checklist divided into four phases:
 
  Phase 1 — Implementation: atomic coding and roxygen2 steps (R Developer).
    Format: N. [ ] [IMPL] <file>: <task description>
@@ -87,18 +87,29 @@ EXACTLY this structure:
 
  Format each testthat item as:
    N. [ ] [TEST] test-<module>.R: test <function>() <description>
-   N. [ ] [TEST] test-<module>.R: run testthat::test_file() and verify all pass]
-```
+   N. [ ] [TEST] test-<module>.R: run testthat::test_file() and verify all pass
+
+ Phase 4 — Documentation: one `[DOCS]` item per README section or
+   vignette touched (Documenter), closing with a build-gate item.
+
+ Format each documentation item as:
+   N. [ ] [DOCS] README.md: <section>: <required change>
+   N. [ ] [DOCS] vignettes/<name>.Rmd: <section>: <required change>
+   N. [ ] [DOCS] knit all touched vignettes and verify they build cleanly
+ If the task changes nothing user-facing, Phase 4 is exactly one item:
+   N. [ ] [DOCS] no user-facing change — verify README.md and vignettes
+      remain accurate, tick to confirm]
+````
 
 **Worked Examples (MANDATORY for every exported function).** Under each
 exported function's Interface Contract, include 1–2 concrete
 input → output examples:
 
-```
+````
 Worked Examples:
   1. f(x = c(2, 4, 6), na_rm = TRUE)  ->  2
   2. f(x = c(5, NA), na_rm = FALSE)   ->  NA
-```
+````
 
 Rules for these examples:
 - Inputs must be TINY (3–6 values) so the one-off check below stays a
@@ -109,7 +120,8 @@ Rules for these examples:
 - Show exact values (e.g. `1.6329932` not `~1.63`), or the exact error
   condition for an Errors example.
 - These examples are the independent anchor the Tester's exact-value
-  assertions are built on. They are the single most leveraged lines in
+  assertions are built on, and the worked material the Documenter later
+  knits into vignette chunks. They are the single most leveraged lines in
   the plan — a wrong example sends the whole fix loop chasing a phantom
   bug. The Tester independently recomputes each one before anchoring on
   it, so an example that does not follow from the contract will be
@@ -120,9 +132,9 @@ expected outputs by hand. For each example input, write a one-off
 computation expressing the function's CONTRACT — plain base R and
 explicit formulas — and execute it, e.g.:
 
-```
+````
 Rscript -e 'mean(c(2, 4, 6))'
-```
+````
 
 Transcribe the printed value exactly as the example's output.
 
@@ -148,6 +160,24 @@ Rules:
   hand derivation and add one line under Overview: "Worked Examples
   derived by hand, not machine-verified."
 
+**Documentation items (Phase 4 — MANDATORY in every plan).** Derive them
+from the Interface Contracts and Data Flow you just wrote — never from
+Pseudocode; the Documenter is forbidden from reading Pseudocode for the
+same contamination reason the Tester is. For each task ask:
+- Which README sections does this change touch? New exported function →
+  Usage. New or changed config key → Configuration. New module →
+  Project Structure. New setup requirement → Setup.
+- Does the Data Flow belong in an existing vignette or a new one? A
+  function whose Interface Contract reads a config file defines, key by
+  key, what the configuration vignette must document — point the `[DOCS]`
+  item at that contract rather than restating it.
+Name the exact file and section in every item so the Documenter can act
+without guessing. Do not restate Worked Example values inside `[DOCS]`
+items; the Documenter reads the Interface Contracts directly. Every plan
+gets a Phase 4 — a task with no user-facing change gets the single
+confirm item; an explicitly ticked "nothing changed" is what keeps
+README.md from silently rotting.
+
 **Scope discipline.** A task file should cover roughly 2–3 modules. Every
 downstream agent reads this plan in full, so an oversized plan is paid for
 several times over — and a developer holding six modules in working memory
@@ -156,6 +186,6 @@ more than about 3 modules, write the plan for the first coherent 2–3 and
 note under Overview which modules are deferred to a follow-up task file.
 
 When saved, return control with:
-```
+````
 STATUS: complete
-```
+````
