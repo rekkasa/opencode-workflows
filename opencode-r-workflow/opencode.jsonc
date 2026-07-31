@@ -3,58 +3,43 @@
 
   // Orchestration is the default agent. Its Phase 0 startup check
   // redirects you to the interviewer when there are no active objectives.
-  "default_agent": "project-manager",
+  "default_agent": "project-manager"
 
-  // Providers used by this project.
+  // Provider used by this project: openai (built into opencode via
+  // Models.dev — no custom npm/baseURL block needed, just OPENAI_API_KEY
+  // in the environment, or `opencode auth login`).
   //
-  //   deepseek    Direct DeepSeek API. Used by every agent EXCEPT the
-  //               architect: interviewer, project-manager, r-developer,
-  //               tester. Direct is much cheaper than routing DeepSeek
-  //               through any gateway.
+  // Every agent runs on the GPT-5.6 family (released 2026-07-09), split
+  // across its three tiers by task, not uniformly:
   //
-  //   opencode-go Reserved for the architect (Kimi K3), which is
-  //               substantially more expensive per token. Concentrating
-  //               spend on the one high-leverage, low-volume agent is
-  //               the whole point of using Go here — plus prompt caching
-  //               keeps repeat architect runs cheap.
-  //               setCacheKey forces a stable cache key on every request;
-  //               promptCacheRetention "24h" (documented max) keeps the
-  //               human approval gates cheap. If the schema rejects
-  //               promptCacheRetention here, drop it; setCacheKey is the
-  //               load-bearing option.
+  //   gpt-5.6-sol    Flagship. Reserved for the two low-frequency,
+  //                  high-stakes reasoning agents: architect (the plan
+  //                  every other agent builds on) and debugger (open-ended
+  //                  hypothesis diagnosis on real-world data bugs). Both
+  //                  run rarely enough that flagship cost is worth it.
   //
-  //   openrouter  Fallback for the architect only, used when opencode-go
-  //               quota is exhausted. OpenRouter's provider-failover kicks
-  //               in for free. Only Kimi routes through it; DeepSeek
-  //               continues going direct in both modes.
+  //   gpt-5.6-terra  Balanced workhorse. Everything else that's invoked
+  //                  often and works from an already-specified plan:
+  //                  interviewer, project-manager, r-developer,
+  //                  r-bugfixer, tester, documenter.
   //
-  // Which model each agent uses is set in the agent .md files (default =
-  // deepseek direct, opencode-go for the architect) or overridden for the
-  // architect only by the fallback overlay at
-  // .opencode/profiles/fallback-overlay.json (activated by
-  // scripts/opencode-fallback). See README "Falling Back Off opencode-go".
-  "provider": {
-    "deepseek": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "DeepSeek",
-      "options": {
-        "baseURL": "https://api.deepseek.com",
-        "apiKey": "{env:DEEPSEEK_API_KEY}"
-      },
-      "models": {
-        "deepseek-v4-pro": { "name": "DeepSeek V4 Pro" }
-      }
-    },
-    "opencode-go": {
-      "options": {
-        "setCacheKey": true,
-        "promptCacheRetention": "24h"
-      }
-    },
-    "openrouter": {
-      "options": {
-        "apiKey": "{env:OPENROUTER_API_KEY}"
-      }
-    }
-  }
+  //   gpt-5.6-luna   Cheapest/fastest tier. doc-backfill only — it's a
+  //                  pure dispatcher that inventories files and hands off
+  //                  to the documenter; it never writes code or docs
+  //                  itself.
+  //
+  // Which model each agent uses is set directly in the agent .md files.
+  // To swap an agent's model when you hit a usage cap, edit its line
+  // in config.yaml and run scripts/apply-models.sh to sync it into
+  // that agent's .md file — see README "Model Assignments".
+  //
+  // GPT-5.6 is new as of this writing. If opencode reports a model not
+  // found, your local Models.dev snapshot may not have caught up yet —
+  // run `opencode models openai --refresh` and cross-check the IDs
+  // (gpt-5.6-sol / gpt-5.6-terra / gpt-5.6-luna) against the live catalog
+  // before assuming the names above are wrong. If they still don't
+  // resolve, pin them explicitly:
+  //   "provider": { "openai": { "models": {
+  //     "gpt-5.6-sol": {}, "gpt-5.6-terra": {}, "gpt-5.6-luna": {}
+  //   } } }
 }

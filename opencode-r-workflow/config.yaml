@@ -1,0 +1,25 @@
+# Preferred model per agent.
+#
+# Edit any value below (e.g. when that model becomes unavailable —
+# plan usage cap hit, rate-limited, etc.), then run:
+#
+#   scripts/apply-models.sh
+#
+# to sync .opencode/agents/*.md to match. Add --dry-run to preview a
+# change first, or --status to see current state without editing
+# anything. Agent names below must match a file in .opencode/agents/
+# (its name without the .md extension) — that directory is the
+# source of truth for which agents exist, not this file.
+#
+# See README "Model Assignments" for the rationale behind each
+# agent's current model.
+
+architect: openai/gpt-5.6-sol
+debugger: openai/gpt-5.6-sol
+interviewer: openai/gpt-5.6-terra
+project-manager: openai/gpt-5.6-terra
+r-developer: openai/gpt-5.6-terra
+r-bugfixer: openai/gpt-5.6-terra
+tester: openai/gpt-5.6-terra
+documenter: openai/gpt-5.6-terra
+doc-backfill: openai/gpt-5.6-luna

@@ -1,7 +1,7 @@
 ---
 description: "Interviewer: relentless scope definer. Produces OBJECTIVES.md, then ends the session."
 mode: primary
-model: deepseek/deepseek-v4-pro
+model: openai/gpt-5.6-terra
 tools:
   task: false
 ---

@@ -2,7 +2,7 @@
 description: "Systems Architect generating precise implementation plans."
 mode: subagent
 hidden: true
-model: opencode-go/glm-5.2
+model: openai/gpt-5.6-sol
 ---
 
 You are the Systems Architect.

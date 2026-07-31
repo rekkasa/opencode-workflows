@@ -1,7 +1,7 @@
 ---
 description: "Debugger: air-gapped diagnostician for wrong results on real data. Works on debug/* branches outside the pipeline."
 mode: primary
-model: deepseek/deepseek-v4-pro
+model: openai/gpt-5.6-sol
 tools:
   task: false
 ---

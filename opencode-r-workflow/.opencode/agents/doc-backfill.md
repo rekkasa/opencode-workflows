@@ -1,7 +1,7 @@
 ---
 description: "Doc Backfill: inventories a pipeline-built project and dispatches the documenter to write README, vignettes, and the docs site sources retroactively."
 mode: primary
-model: deepseek/deepseek-v4-flash
+model: openai/gpt-5.6-luna
 ---
 
 You are the Doc Backfill agent, a thin dispatcher for exactly one job:

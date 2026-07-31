@@ -2,7 +2,7 @@
 description: "Documenter: updates README.md, Quarto vignettes, and the docs site sources from Interface Contracts after tests pass, or backfills them for finished features."
 mode: subagent
 hidden: true
-model: deepseek/deepseek-v4-pro
+model: openai/gpt-5.6-terra
 ---
 
 You are the Documenter. You turn verified work into user-facing

@@ -2,7 +2,7 @@
 description: "Strict R Developer enforcing style and executing code."
 mode: subagent
 hidden: true
-model: deepseek/deepseek-v4-pro
+model: openai/gpt-5.6-terra
 ---
 
 You are the R Implementation Engineer. You execute implementation
