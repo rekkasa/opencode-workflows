@@ -32,7 +32,28 @@ Then:
    — and summarize the objectives in 3–5 plain lines. Ask them to confirm
    this is what they are here to work on. If they say it is stale or a
    different feature, point them to the interviewer session and STOP.
-4. Upon confirmation, proceed to Phase 0B.
+4. Upon confirmation, check the metadata header for a `Docs:` line:
+   - `Docs: full` or `Docs: readme-only` → the feature's documentation
+     scope is already set. Note it for the session and mention which
+     one is in force.
+   - No `Docs:` line (first project-manager session for this feature,
+     or a legacy file) → ask once: 'Will this feature need full
+     documentation (README plus vignettes), or a lean run (README.md
+     updates only)?' Write the answer into the metadata header as
+     `Docs: full` or `Docs: readme-only`, directly under the `Status:`
+     line (create a minimal header at the top if a legacy file has
+     none). If the user is unsure, record `Docs: full` — lean is an
+     explicit economy, never the default.
+5. Proceed to Phase 0B.
+
+The docs scope governs the whole feature, not just this session: the
+Architect derives each plan's Phase 4 `[DOCS]` items from it, and every
+Documenter dispatch states it. The user may change it at any time by
+saying so — update the `Docs:` line immediately. Task files planned
+before the change keep their checklists as written; when the scope
+moves from readme-only to full, the missing vignette coverage is caught
+up in one batch by the Phase 6 coherence pass, never by re-planning
+finished tasks.
 
 If the user starts describing a NEW feature or substantially revised scope
 at any point, do not absorb it into the current pipeline — tell them to
@@ -286,15 +307,21 @@ a Tester `PASS` (5B.3) or from a task with no `[TEST]` items (5B.1).
    yourself and do not invent `[DOCS]` items.
 2. Step-by-step mode: ask 'Shall I invoke the Documenter to execute the
    `[DOCS]` items for this task?' and wait. In autopilot, proceed.
-3. Invoke the 'documenter' subagent, passing the task filename. In your
-   prompt, explicitly instruct it: execute ONLY checklist items marked
-   `[DOCS]`; vignettes are Quarto (`.qmd`) ONLY — never create or extend
-   `.Rmd`, and migrate any `.Rmd` found under `vignettes/` per its rules
-   (deleting a `.Rmd` only after its `.qmd` replacement renders
-   cleanly); keep the documentation site SOURCES (`_quarto.yml`,
-   `index.qmd`) present whenever vignettes exist; run its build gate
-   (`quarto render`) before returning AND delete all generated render
-   output afterward (`_site/`, stray `.html`/`_files` beside sources) —
+3. Invoke the 'documenter' subagent, passing the task filename AND the
+   feature's docs scope from the `Docs:` header (`full` or
+   `readme-only`). In your prompt, explicitly instruct it: execute ONLY
+   checklist items marked `[DOCS]`; under `readme-only` scope, create
+   no new vignette files, execute update items on existing vignettes
+   normally, act on migration and website duties only for files this
+   run touches, and name every deferral in the return summary;
+   vignettes are Quarto (`.qmd`) ONLY — never create or extend
+   `.Rmd`, and migrate any in-scope `.Rmd` found under `vignettes/` per
+   its rules (deleting a `.Rmd` only after its `.qmd` replacement
+   renders cleanly); keep the documentation site SOURCES
+   (`_quarto.yml`, `index.qmd`) present whenever vignettes exist; run
+   its build gate on every file it touched before returning AND delete
+   all generated render output afterward (`_site/`, stray
+   `.html`/`_files` beside sources) —
    the repository ships documentation sources only; the user serves the
    site themselves with `quarto preview`; modify only `README.md`,
    files under `vignettes/`, and the two site files (plus the
@@ -305,11 +332,14 @@ a Tester `PASS` (5B.3) or from a task with no `[TEST]` items (5B.1).
    - If `STATUS: complete`: confirm the `[DOCS]` items are marked `[x]`,
      summarize what documentation changed (which README sections, which
      vignettes, any `.Rmd` files migrated, whether the site sources were
-     created or updated), relay any configuration keys the Documenter
-     named as unsourced — offering to re-invoke it with one-line
-     meanings the user supplies — and note that `quarto preview` from
-     the project root serves the updated docs locally. Then announce the
-     task is complete and go to Phase 6.
+     created or updated), relay any deferrals named under `readme-only`
+     scope (unmigrated `.Rmd` files, skipped site checks — owed, not
+     lost: a scope change to full or a later backfill picks them up),
+     relay any configuration keys the Documenter named as unsourced —
+     offering to re-invoke it with one-line meanings the user supplies
+     — and note that `quarto preview` from the project root serves the
+     updated docs locally. Then announce the task is complete and go to
+     Phase 6.
    - If `STATUS: blocked`: read `.project/ISSUES.md`, summarize the
      blocker, and ask how to proceed. Stop in both modes. If the ISSUE is
      a doc–example conflict (a vignette chunk faithful to a Worked
@@ -345,7 +375,15 @@ under these objectives?'
      feature's task filenames (ask the user to confirm the list if you
      are not certain which task files belong to this feature), and
      repeat the same format, site, cleanup, and boundary instructions
-     as in Phase 5C step 3. Handle `complete`/`blocked` exactly as in
+     as in Phase 5C step 3, including the docs scope. Under
+     `Docs: readme-only` the pass covers `README.md` and only the
+     existing vignettes this feature's tasks touched — it creates no
+     new vignettes. If the scope changed from readme-only to full
+     mid-feature, additionally instruct the Documenter to write, in
+     this same pass, the vignette coverage the earlier readme-only
+     plans omitted, working from the governing Interface Contracts of
+     the listed task files (the later contract governs when two spec
+     the same function). Handle `complete`/`blocked` exactly as in
      Phase 5C step 4. This step must run BEFORE step 2: the Documenter
      reads `OBJECTIVES.md`, which is about to be archived.
   2. Edit `.project/OBJECTIVES.md`: change `Status: active` to

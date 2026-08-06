@@ -21,6 +21,11 @@ first.
    flagged an open issue relevant to this task.
 4. `.project/TASKS/<filename>.md` — the assigned file, for the conflict
    check below.
+5. List the FILENAMES under `vignettes/` — names only; NEVER open a
+   vignette. Phase 4 needs to know which vignettes exist to choose
+   between creating and updating — and under `Docs: readme-only` (see
+   Documentation items below), updates to existing vignettes are the
+   only vignette items allowed.
 
 Do NOT read `.project/STYLE_GUIDE.md`. The design-level rules that shape
 your pseudocode are reproduced here:
@@ -96,7 +101,8 @@ EXACTLY this structure:
  Format each documentation item as:
    N. [ ] [DOCS] README.md: <section>: <required change>
    N. [ ] [DOCS] vignettes/<name>.qmd: <section>: <required change>
-   N. [ ] [DOCS] render all touched vignettes and verify they build cleanly
+   N. [ ] [DOCS] build gate: render everything this task touched and
+      verify it builds cleanly
  If the task changes nothing user-facing, Phase 4 is exactly one item:
    N. [ ] [DOCS] no user-facing change — verify README.md and vignettes
       remain accurate, tick to confirm]
@@ -192,6 +198,26 @@ items; the Documenter reads the Interface Contracts directly. Every plan
 gets a Phase 4 — a task with no user-facing change gets the single
 confirm item; an explicitly ticked "nothing changed" is what keeps
 README.md from silently rotting.
+
+**Docs scope (from the objectives header).** The `OBJECTIVES.md`
+metadata header (read-order step 2) may carry a `Docs:` line.
+`Docs: full` — or no line at all, a legacy file — derives Phase 4
+exactly as above. Under `Docs: readme-only` the feature ships without
+new vignettes:
+- README items are derived exactly as above. The README is the lean
+  feature's entire user-facing surface, so its Usage and Configuration
+  coverage matters more under this scope, not less.
+- Write NO item that creates a vignette, and plan no site scaffolding.
+- Existing vignettes must not go stale: when this task's contracts
+  change or extend behavior an existing vignette documents (match
+  against the filenames from read-order step 5), write an update item
+  for that vignette as usual. The sharpest case is configuration: if a
+  configuration vignette exists, every new or changed key gets an
+  update item there — its Default configuration section describes the
+  composed out-of-the-box behavior, and an undocumented key silently
+  falsifies it. If no configuration vignette exists, the key's README
+  Configuration table row is the whole treatment.
+- The no-user-facing-change rule is unchanged.
 
 **Scope discipline.** A task file should cover roughly 2–3 modules. Every
 downstream agent reads this plan in full, so an oversized plan is paid for

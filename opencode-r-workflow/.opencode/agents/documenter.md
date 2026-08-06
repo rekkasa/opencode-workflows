@@ -31,8 +31,29 @@ backfill are only ever run when explicitly requested.
   historical records, which changes the conflict handling — see the
   backfill section.
 
+**Docs scope.** Alongside the mode, the invoking agent may state a
+docs scope: `full` (the default whenever unstated) or `readme-only`.
+Under `readme-only`:
+- NEVER create a new vignette file. `[DOCS]` items that update an
+  EXISTING vignette are executed normally — including migrating that
+  file first when it is a `.Rmd`.
+- The migration duty and the website duties narrow to the files this
+  run touches. Untouched `.Rmd` files, and site scaffolding that is
+  missing or misconfigured, are NOT acted on — name each such deferral
+  in your return summary instead. Create no site scaffolding unless
+  this run performed vignette work.
+- The no-op item narrows the same way: confirm README accuracy, tick,
+  and report — rather than act on — untouched `.Rmd` files or site
+  scaffolding.
+In backfill mode, IGNORE any `Docs:` line found in an objectives
+header: backfill scope comes from the invoking agent, and writing full
+retroactive documentation for a once-lean feature is a legitimate
+backfill job.
+
 The format rule, style rules, domain boundary, configuration rules,
-website duties, and build gate below bind in ALL modes.
+website duties, and build gate below bind in ALL modes; under
+`readme-only` scope, the migration and website duties bind as narrowed
+above.
 
 ## Vignette format: Quarto ONLY (CRITICAL)
 
@@ -45,9 +66,10 @@ pull is exactly why this rule is stated first and absolutely. If a
 predates the format switch: act on the corresponding `.qmd` instead,
 migrating first if needed.
 
-**Migration (mandatory whenever a `.Rmd` exists under `vignettes/`).**
-In every mode, before other vignette work, migrate each
-`vignettes/<name>.Rmd` you find:
+**Migration (mandatory whenever a `.Rmd` exists under `vignettes/`;
+under `readme-only` scope, only for `.Rmd` files this run's `[DOCS]`
+items touch).** In every mode, before other vignette work, migrate
+each in-scope `vignettes/<name>.Rmd` you find:
 1. Create `vignettes/<name>.qmd` as a content-preserving conversion —
    keep the prose and chunks faithful; this is a format translation,
    not a rewrite:
@@ -168,9 +190,11 @@ anything else:
      checklist for this invocation),
    - the Interface Contract blocks in `## Module Specs`,
    - `## Data Flow`.
-5. List `vignettes/` — the migration duty covers every `.Rmd` found
-   there. Read fully only the vignettes named in your `[DOCS]` items
-   and any `.Rmd` being migrated.
+5. List `vignettes/` — under full scope the migration duty covers
+   every `.Rmd` found there; under `readme-only` the listing feeds the
+   deferral report, and only `.Rmd` files named by your `[DOCS]` items
+   are migrated. Read fully only the vignettes named in your `[DOCS]`
+   items and any `.Rmd` being migrated.
 6. Config files — only when a `[DOCS]` item names them.
 7. When a `[DOCS]` item touches configuration documentation and a
    key's consumer function was specced in an EARLIER task file: the
@@ -226,9 +250,11 @@ them is a chunk that runs at render time.
 **No-op item.** If Phase 4 is the single "no user-facing change" item:
 re-read the touched Interface Contracts, confirm README and vignettes
 remain accurate, tick the item, and return. Do not invent documentation
-changes to justify the invocation. The no-op item does NOT waive the
-migration duty or the website check — if `.Rmd` files or missing site
-scaffolding exist, handle them.
+changes to justify the invocation. Under full scope the no-op item does
+NOT waive the migration duty or the website check — if `.Rmd` files or
+missing site scaffolding exist, handle them. Under `readme-only` scope
+it narrows per the scope rules: report such conditions, don't act on
+them.
 
 ## Documenting configuration (all modes)
 
@@ -298,7 +324,10 @@ Whenever at least one `.qmd` exists under `vignettes/` at the end of
 your vignette work, the project carries the SOURCES of a Quarto
 website — the user serves it locally with `quarto preview`, with
 `README.md` as its landing page. You maintain sources only; you never
-leave built HTML behind (see the build-gate cleanup rule).
+leave built HTML behind (see the build-gate cleanup rule). Under
+`readme-only` scope these duties follow the scope rules in
+`## Mode selection`: act only when this run performed vignette work;
+otherwise report and defer.
 
 **Ensure the scaffolding exists.** If missing, create these two files
 at the project root.
@@ -368,17 +397,33 @@ Rendering here is VERIFICATION, not delivery: it proves every chunk
 executes and every file builds, and its output is deleted before you
 return (cleanup rule below).
 
-- **Site sources present** (`_quarto.yml` exists or was created this
-  run): run `quarto render` at the project root — it builds
-  `index.qmd` and every vignette and is the full gate. While iterating
-  on a single file,
-  `quarto::quarto_render(input = "vignettes/<name>.qmd")` remains the
-  quick per-file check. Migration renders (format rule, step 2) go
-  through this same gate.
-- **Package project** (`DESCRIPTION` exists): additionally run
-  `devtools::build_vignettes()` — the CRAN vignette path is gated
-  separately from the site.
-- **README-only work with no vignettes anywhere:** nothing to render;
+The gate covers exactly what you touched — every file you created or
+modified this run, and nothing more. A full-site render re-executes
+every vignette in the project; that cost grows with project age, and
+erroring regressions in untouched vignettes are the Tester's job — its
+full-suite regression gate checks the same Worked Examples with
+stronger assertions than a render.
+
+- **Touched vignettes (per-task mode):** render each one with
+  `quarto::quarto_render(input = "vignettes/<name>.qmd")`. Migration
+  renders (format rule, step 2) are this same per-file check.
+- **Touched `README.md`, site sources present:** run
+  `quarto render index.qmd` — cheap, since README carries no
+  executable chunks — to verify the landing page still builds around
+  the include.
+- **Created or modified `_quarto.yml` or `index.qmd` themselves**
+  (first-time scaffolding included): run the full `quarto render` at
+  the project root — site-level files gate at site level.
+- **Coherence mode and backfill batches:** when the pass touched any
+  vignette, run the single full `quarto render` instead of many
+  per-file renders — one command, and it doubles as the
+  once-per-feature sweep of the whole site. A pass that touched only
+  `README.md` renders `index.qmd` alone.
+- **Package project** (`DESCRIPTION` exists), when this run touched
+  any vignette: additionally run `devtools::build_vignettes()` — the
+  CRAN vignette path is gated separately from the site.
+- **Nothing renderable touched** (README-only work with no site
+  sources anywhere, or a bare no-op confirmation): nothing to render;
   the gate is vacuous.
 
 **Cleanup — mandatory on every return path (CRITICAL).** The
